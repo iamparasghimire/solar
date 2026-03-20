@@ -238,7 +238,7 @@ if DEBUG:
 else:
     # Allow origins provided via env var, otherwise fall back to Droplet frontend origin
     CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS') or [
-        "http://138.197.11.80:3000",
+        "http://138.197.11.80",
     ]
     CORS_ALLOW_CREDENTIALS = True
 

@@ -18,6 +18,12 @@ services:
       - static_data:/app/staticfiles
       - media_data:/app/media
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # ── Next.js Frontend ────────────────────────────────────────────────────────
   frontend:
@@ -27,6 +33,12 @@ services:
       args:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost}
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # ── Nginx Reverse Proxy ─────────────────────────────────────────────────────
   nginx:
@@ -38,8 +50,10 @@ services:
       - static_data:/app/staticfiles:ro
       - media_data:/app/media:ro
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
