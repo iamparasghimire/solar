@@ -1,0 +1,49 @@
+name: Deploy Backend to DigitalOcean
+
+on:
+  push:
+    branches: [master, main]
+
+jobs:
+  # ── Backend tests ─────────────────────────────────────────────────────────
+  test-backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: solar_ecommerce
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        env:
+          DJANGO_SECRET_KEY: test-secret-key-for-ci-only
+          DJANGO_DEBUG: "True"
+        run: pytest --tb=short -q
+
+  # ── Deploy backend + nginx ────────────────────────────────────────────────
+  deploy:
+    needs: [test-backend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/solar
+            git pull origin master
+            docker compose up -d --build backend nginx
+            docker compose ps
+            echo "✅ Backend deployment complete"
+
+            docker compose ps
+            echo "✅ Deployment complete"
